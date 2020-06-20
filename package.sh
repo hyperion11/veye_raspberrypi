@@ -20,7 +20,12 @@ rm -rf ${TMPDIR}/*
 mkdir -p ${TMPDIR}/usr/local/bin || exit 1
 mkdir -p ${TMPDIR}/usr/local/share/veye-raspberrypi || exit 1
 
-cp -a veye_raspcam/bin/veye* ${TMPDIR}/usr/local/bin/
+pushd veye_raspcam/source
+chmod +x buildme
+./buildme
+cp veye_* ${TMPDIR}/usr/local/bin/
+popd
+
 cp -a i2c_cmd/bin/* ${TMPDIR}/usr/local/share/veye-raspberrypi/
 
 VERSION=$(git describe)
