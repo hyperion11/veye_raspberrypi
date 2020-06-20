@@ -21,15 +21,15 @@ mkdir -p ${TMPDIR}/usr/local/bin || exit 1
 mkdir -p ${TMPDIR}/usr/local/share/veye-raspberrypi || exit 1
 
 pushd veye_raspcam/source
-chmod +x buildme
-./buildme
-cp veye_* ${TMPDIR}/usr/local/bin/
+chmod +x buildme || exit 1
+./buildme || exit 1
+cp veye_* ${TMPDIR}/usr/local/bin/ || exit 1
 popd
 
-chmod +x ${TMPDIR}/usr/local/bin/*
+chmod +x ${TMPDIR}/usr/local/bin/* || exit 1
 
-cp -a i2c_cmd/bin/* ${TMPDIR}/usr/local/share/veye-raspberrypi/
-chmod +x ${TMPDIR}/usr/local/share/veye-raspberrypi/*
+cp -a i2c_cmd/bin/* ${TMPDIR}/usr/local/share/veye-raspberrypi/ || exit 1
+chmod +x ${TMPDIR}/usr/local/share/veye-raspberrypi/* || exit 1
 
 VERSION=$(git describe)
 
