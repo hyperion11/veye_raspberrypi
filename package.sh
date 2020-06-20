@@ -26,7 +26,10 @@ chmod +x buildme
 cp veye_* ${TMPDIR}/usr/local/bin/
 popd
 
+chmod +x ${TMPDIR}/usr/local/bin/*
+
 cp -a i2c_cmd/bin/* ${TMPDIR}/usr/local/share/veye-raspberrypi/
+chmod +x ${TMPDIR}/usr/local/share/veye-raspberrypi/*
 
 VERSION=$(git describe)
 
