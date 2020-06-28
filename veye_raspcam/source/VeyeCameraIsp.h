@@ -17,8 +17,11 @@ typedef struct
                         //0:1080p@30fps
                         ///1: 720p@60fps
                         ///2 vga 130fps
+	int width;          // use to replace sensor_mode
+	int height;         //  use to replace sensor_mode
+	int framerate;       //frame rate
+	MMAL_FOURCC_T out_yuv_fmt; //MMAL_ENCODING_I420 default
 } VEYE_CAMERA_ISP_STATE;
-
 
 void veye_camera_isp_set_defaults(VEYE_CAMERA_ISP_STATE *state);
 
