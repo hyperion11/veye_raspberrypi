@@ -118,6 +118,7 @@ const int MAX_BITRATE_LEVEL42 = 62500000; // 62.5Mbits/s
 /// Interval at which we check for an failure abort during capture
 const int ABORT_INTERVAL = 100; // ms
 
+
 /// Capture/Pause switch method
 /// Simply capture for time specified
 #define WAIT_METHOD_NONE           0
@@ -243,8 +244,6 @@ struct RASPIVID_STATE_S
    int64_t lasttime;
 
    bool netListen;
-   MMAL_BOOL_T addSPSTiming;
-   int slices;
 };
 
 
@@ -335,8 +334,6 @@ static void display_valid_parameters( char *app_name);
 #define CommandRaw          32
 #define CommandRawFormat    33
 #define CommandNetListen    34
-#define CommandSPSTimings	35
-#define CommandSlices		36
 
 static COMMAND_LIST cmdline_commands[] =
 {
@@ -378,8 +375,6 @@ static COMMAND_LIST cmdline_commands[] =
    { CommandRaw,           "-raw",        "r",  "Output filename <filename> for raw video", 1 },
    { CommandRawFormat,     "-raw-format", "rf", "Specify output format for raw video. Default is yuv", 1},
    { CommandNetListen,     "-listen",     "l", "Listen on a TCP socket", 0},
-   { CommandSPSTimings,    "-spstimings",    "stm", "Add in h.264 sps timings", 0},
-   { CommandSlices   ,     "-slices",     "sl", "Horizontal slices per frame. Default 1 (off)", 1},
 };
 
 static int cmdline_commands_size = sizeof(cmdline_commands) / sizeof(cmdline_commands[0]);
@@ -457,8 +452,6 @@ static void default_status(RASPIVID_STATE *state)
    state->save_pts = 0;
 
    state->netListen = false;
-   state->addSPSTiming = MMAL_FALSE;
-   state->slices = 1;
 
 
    // Setup preview window defaults
@@ -523,9 +516,7 @@ static void dump_status(RASPIVID_STATE *state)
    fprintf(stderr, "H264 Profile %s\n", raspicli_unmap_xref(state->profile, profile_map, profile_map_size));
    fprintf(stderr, "H264 Level %s\n", raspicli_unmap_xref(state->level, level_map, level_map_size));
    fprintf(stderr, "H264 Quantisation level %d, Inline headers %s\n", state->quantisationParameter, state->bInlineHeaders ? "Yes" : "No");
-   fprintf(stderr, "H264 Fill SPS Timings %s\n", state->addSPSTiming ? "Yes" : "No");
    fprintf(stderr, "H264 Intra refresh type %s, period %d\n", raspicli_unmap_xref(state->intra_refresh_type, intra_refresh_map, intra_refresh_map_size), state->intraperiod);
-   fprintf(stderr, "H264 Slices %d\n", state->slices);
 
    // Not going to display segment data unless asked for it.
    if (state->segmentSize)
@@ -597,7 +588,6 @@ static int parse_cmdline(int argc, const char **argv, RASPIVID_STATE *state)
             valid = 0;
          else
             i++;
-	  state->veye_camera_isp_state.width = state->width;
          break;
 
       case CommandHeight: // Height > 0
@@ -605,7 +595,6 @@ static int parse_cmdline(int argc, const char **argv, RASPIVID_STATE *state)
             valid = 0;
          else
             i++;
-	 state->veye_camera_isp_state.height = state->height;
          break;
 
       case CommandBitrate: // 1-100
@@ -684,7 +673,6 @@ static int parse_cmdline(int argc, const char **argv, RASPIVID_STATE *state)
          if (sscanf(argv[i + 1], "%u", &state->framerate) == 1)
          {
             // TODO : What limits do we need for fps 1 - 30 - 120??
-            state->veye_camera_isp_state.framerate = state->framerate;
             i++;
          }
          else
@@ -952,21 +940,7 @@ static int parse_cmdline(int argc, const char **argv, RASPIVID_STATE *state)
 
          break;
       }
-      case CommandSlices:
-      {
-         if ((sscanf(argv[i + 1], "%d", &state->slices) == 1) && (state->slices > 0))
-            i++;
-         else
-            valid = 0;
-         break;
-      }
 
-      case CommandSPSTimings:
-      {
-         state->addSPSTiming = MMAL_TRUE;
-
-         break;
-      }
       default:
       {
          // Try parsing for any image specific parameters
@@ -1752,7 +1726,7 @@ static MMAL_STATUS_T create_camera_component(RASPIVID_STATE *state)
    format->es->video.crop.y = 0;
    format->es->video.crop.width = state->width;
    format->es->video.crop.height = state->height;
-   format->es->video.frame_rate.num = state->framerate;
+   format->es->video.frame_rate.num = PREVIEW_FRAME_RATE_NUM;
    format->es->video.frame_rate.den = PREVIEW_FRAME_RATE_DEN;
 
    status = mmal_port_format_commit(preview_port);
@@ -1878,7 +1852,6 @@ static MMAL_STATUS_T create_splitter_component(RASPIVID_STATE *state)
    MMAL_ES_FORMAT_T *format;
    MMAL_STATUS_T status;
    MMAL_POOL_T *pool;
-   MMAL_PORT_T *preview_port = NULL, *video_port = NULL;
    int i;
 
    if (state->veye_camera_isp_state.isp_component == NULL)
@@ -1957,8 +1930,6 @@ static MMAL_STATUS_T create_splitter_component(RASPIVID_STATE *state)
          }
       }
 #endif
-    // splitter->output[i]->format->es->video.frame_rate.num = state->framerate;
-    // vcos_log_error("set encoder splitter out put frame rate  %d ", state->framerate);
       status = mmal_port_format_commit(splitter->output[i]);
 
       if (status != MMAL_SUCCESS)
@@ -1967,38 +1938,7 @@ static MMAL_STATUS_T create_splitter_component(RASPIVID_STATE *state)
          goto error;
       }
    }
-   #if 0
-//xumm add
-  // Set the encode format on the video  port
-   video_port = splitter->output[SPLITTER_ENCODER_PORT];
-/*   format = video_port->format;
-   format->encoding_variant = MMAL_ENCODING_I420;
 
-   format->encoding = MMAL_ENCODING_OPAQUE;
-   format->es->video.width = VCOS_ALIGN_UP(state->width, 16);
-   format->es->video.height = VCOS_ALIGN_UP(state->height, 8);
-   format->es->video.crop.x = 0;
-   format->es->video.crop.y = 0;
-   format->es->video.crop.width = state->width;
-   format->es->video.crop.height = state->height;
-   format->es->video.frame_rate.num = state->framerate;
-   format->es->video.frame_rate.den = VIDEO_FRAME_RATE_DEN;
-*/
-   vcos_log_error("set encoder splitter out put frame rate  %d ", state->framerate);
-   MMAL_PARAMETER_FRAME_RATE_T frame_t = {{MMAL_PARAMETER_FRAME_RATE,sizeof(MMAL_PARAMETER_FRAME_RATE_T)},{state->framerate,30}};
-
-
-  // return mmal_status_to_int(mmal_port_parameter_set(camera->control, &frame_t.hdr));
-   //status = mmal_port_format_commit(video_port);
-   status = mmal_status_to_int(mmal_port_parameter_set(video_port, &frame_t.hdr));
-   //end
-   if (status != MMAL_SUCCESS)
-   {
-      vcos_log_error("camera video format couldn't be set %d ",status);
-      goto error;
-   } 
-#endif
-//end
    /* Enable component */
    status = mmal_component_enable(splitter);
 
@@ -2141,7 +2081,6 @@ static MMAL_STATUS_T create_encoder_component(RASPIVID_STATE *state)
    // We need to set the frame rate on output to 0, to ensure it gets
    // updated correctly from the input framerate when port connected
    encoder_output->format->es->video.frame_rate.num = 0;
-//   encoder_output->format->es->video.frame_rate.num = state->framerate;
    encoder_output->format->es->video.frame_rate.den = 1;
 
    // Commit the port changes to the output port
@@ -2245,56 +2184,48 @@ static MMAL_STATUS_T create_encoder_component(RASPIVID_STATE *state)
       // Continue rather than abort..
    }
 
-   if (state->encoding == MMAL_ENCODING_H264)
+   //set INLINE HEADER flag to generate SPS and PPS for every IDR if requested
+   if (mmal_port_parameter_set_boolean(encoder_output, MMAL_PARAMETER_VIDEO_ENCODE_INLINE_HEADER, state->bInlineHeaders) != MMAL_SUCCESS)
    {
-      //set INLINE HEADER flag to generate SPS and PPS for every IDR if requested
-      if (mmal_port_parameter_set_boolean(encoder_output, MMAL_PARAMETER_VIDEO_ENCODE_INLINE_HEADER, state->bInlineHeaders) != MMAL_SUCCESS)
+      vcos_log_error("failed to set INLINE HEADER FLAG parameters");
+      // Continue rather than abort..
+   }
+
+   //set INLINE VECTORS flag to request motion vector estimates
+   if (state->encoding == MMAL_ENCODING_H264 &&
+       mmal_port_parameter_set_boolean(encoder_output, MMAL_PARAMETER_VIDEO_ENCODE_INLINE_VECTORS, state->inlineMotionVectors) != MMAL_SUCCESS)
+   {
+      vcos_log_error("failed to set INLINE VECTORS parameters");
+      // Continue rather than abort..
+   }
+
+   // Adaptive intra refresh settings
+   if (state->encoding == MMAL_ENCODING_H264 &&
+       state->intra_refresh_type != -1)
+   {
+      MMAL_PARAMETER_VIDEO_INTRA_REFRESH_T  param;
+      param.hdr.id = MMAL_PARAMETER_VIDEO_INTRA_REFRESH;
+      param.hdr.size = sizeof(param);
+
+      // Get first so we don't overwrite anything unexpectedly
+      status = mmal_port_parameter_get(encoder_output, &param.hdr);
+      if (status != MMAL_SUCCESS)
       {
-         vcos_log_error("failed to set INLINE HEADER FLAG parameters");
-         // Continue rather than abort..
+         vcos_log_warn("Unable to get existing H264 intra-refresh values. Please update your firmware");
+         // Set some defaults, don't just pass random stack data
+         param.air_mbs = param.air_ref = param.cir_mbs = param.pir_mbs = 0;
       }
 
-      //set flag for add SPS TIMING
-      if (mmal_port_parameter_set_boolean(encoder_output, MMAL_PARAMETER_VIDEO_ENCODE_SPS_TIMING, state->addSPSTiming) != MMAL_SUCCESS)
+      param.refresh_mode = state->intra_refresh_type;
+
+      //if (state->intra_refresh_type == MMAL_VIDEO_INTRA_REFRESH_CYCLIC_MROWS)
+      //   param.cir_mbs = 10;
+
+      status = mmal_port_parameter_set(encoder_output, &param.hdr);
+      if (status != MMAL_SUCCESS)
       {
-         vcos_log_error("failed to set SPS TIMINGS FLAG parameters");
-         // Continue rather than abort..
-      }
-
-      //set INLINE VECTORS flag to request motion vector estimates
-      if (mmal_port_parameter_set_boolean(encoder_output, MMAL_PARAMETER_VIDEO_ENCODE_INLINE_VECTORS, state->inlineMotionVectors) != MMAL_SUCCESS)
-      {
-         vcos_log_error("failed to set INLINE VECTORS parameters");
-         // Continue rather than abort..
-      }
-
-      // Adaptive intra refresh settings
-      if ( state->intra_refresh_type != -1)
-      {
-         MMAL_PARAMETER_VIDEO_INTRA_REFRESH_T  param;
-         param.hdr.id = MMAL_PARAMETER_VIDEO_INTRA_REFRESH;
-         param.hdr.size = sizeof(param);
-
-         // Get first so we don't overwrite anything unexpectedly
-         status = mmal_port_parameter_get(encoder_output, &param.hdr);
-         if (status != MMAL_SUCCESS)
-         {
-            vcos_log_warn("Unable to get existing H264 intra-refresh values. Please update your firmware");
-            // Set some defaults, don't just pass random stack data
-            param.air_mbs = param.air_ref = param.cir_mbs = param.pir_mbs = 0;
-         }
-
-         param.refresh_mode = state->intra_refresh_type;
-
-         //if (state->intra_refresh_type == MMAL_VIDEO_INTRA_REFRESH_CYCLIC_MROWS)
-         //   param.cir_mbs = 10;
-
-         status = mmal_port_parameter_set(encoder_output, &param.hdr);
-         if (status != MMAL_SUCCESS)
-         {
-            vcos_log_error("Unable to set H264 intra-refresh values");
-            goto error;
-         }
+         vcos_log_error("Unable to set H264 intra-refresh values");
+         goto error;
       }
    }
 
@@ -2571,32 +2502,6 @@ static int wait_for_next_change(RASPIVID_STATE *state)
 }
 
 /**
- *  buffer header callback function for camera
- *
- *  Callback will dump buffer data to internal buffer
- *
- * @param port Pointer to port from which callback originated
- * @param buffer mmal buffer header pointer
- */
-/*static void splitter_output_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buffer)
-{
-	
-}*/
-
-/** Callback from the connection. Buffer is available. */
-static void connection_callback(MMAL_CONNECTION_T *connection)
-{
-   //struct CONTEXT_T *ctx = (struct CONTEXT_T *)connection->user_data;
-  // fprintf(stderr, "connection_callback\n");
-  vcos_log_error("connection_callback\n");
-   /* The processing is done in our main thread */
-  // vcos_semaphore_post(&ctx->semaphore);
-
-   
-}
-
-
-/**
  * main
  */
 int main(int argc, const char **argv)
@@ -2694,9 +2599,9 @@ int main(int argc, const char **argv)
       encoder_input_port  = state.encoder_component->input[0];
       encoder_output_port = state.encoder_component->output[0];
 
-	splitter_input_port = state.splitter_component->input[0];
-	splitter_preview_port = state.splitter_component->output[SPLITTER_PREVIEW_PORT];
-	splitter_encode_port = state.splitter_component->output[SPLITTER_ENCODER_PORT];
+	  splitter_input_port = state.splitter_component->input[0];
+	  splitter_preview_port = state.splitter_component->output[SPLITTER_PREVIEW_PORT];
+	  splitter_encode_port = state.splitter_component->output[SPLITTER_ENCODER_PORT];
       {
          if (state.verbose)
             fprintf(stderr, "Connecting camera video port to encoder input port\n");
@@ -2726,37 +2631,16 @@ int main(int argc, const char **argv)
 		  vcos_log_error("%s: Failed to connect camera video port to encoder input", __func__);
 		  goto error;
 	  }
-
-   //end
-         if (status != MMAL_SUCCESS)
-         {
-            vcos_log_error("camera video format couldn't be set %d ",status);
-            goto error;
-         } 
-		 //if manually set framerate , will set add a framerate controller here
+	
 	  // Now connect the camera to the encoder
-
-/*        status =  mmal_connection_create(&state.encoder_connection, splitter_encode_port, encoder_input_port, 0);
-	 state.encoder_connection->user_data = 0;   
-	 state.encoder_connection->callback = connection_callback;
-	 vcos_log_error("set connection call back! ");
-	 
-	   if (status == MMAL_SUCCESS)
-	   {
-	     
-	      status =  mmal_connection_enable(state.encoder_connection);
-	      if (status != MMAL_SUCCESS)
-	         mmal_connection_destroy(state.encoder_connection);
-	   }
-*/
 	  status = connect_ports(splitter_encode_port, encoder_input_port, &state.encoder_connection);
+
 	  if (status != MMAL_SUCCESS)
 	  {
 		  state.encoder_connection = NULL;
 		  vcos_log_error("%s: Failed to connect camera video port to encoder input", __func__);
 		  goto error;
 	  }
-
 
       if (status == MMAL_SUCCESS)
       {
@@ -2771,7 +2655,7 @@ int main(int argc, const char **argv)
             if (state.filename[0] == '-')
             {
                state.callback_data.file_handle = stdout;
-		 	   vcos_log_error("file handle is stdout!");
+		 vcos_log_error("file handle is stdout!");
             }
             else
             {

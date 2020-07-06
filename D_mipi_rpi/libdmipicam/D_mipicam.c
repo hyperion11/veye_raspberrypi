@@ -394,13 +394,7 @@ static MMAL_STATUS_T create_encoder_component(DCAMERA *pcamera)
       vcos_log_error("failed to set INLINE HEADER FLAG parameters");
       // Continue rather than abort..
    }
-    //set flag for add SPS TIMING
-    if (mmal_port_parameter_set_boolean(encoder_output, MMAL_PARAMETER_VIDEO_ENCODE_SPS_TIMING, 1) != MMAL_SUCCESS)
-    {
-     vcos_log_error("failed to set SPS TIMINGS FLAG parameters");
-     // Continue rather than abort..
-    }
-    
+
    //set INLINE VECTORS flag to request motion vector estimates
    if (pcamera->m_encoderstate.encoding == MMAL_ENCODING_H264 &&
        mmal_port_parameter_set_boolean(encoder_output, MMAL_PARAMETER_VIDEO_ENCODE_INLINE_VECTORS, pcamera->m_encoderstate.inlineMotionVectors) != MMAL_SUCCESS)
@@ -505,7 +499,8 @@ static void check_disable_port(MMAL_PORT_T *port)
       mmal_port_disable(port);
 }
 
-int D_init_camera_ex(CAMERA_INSTANCE *camera_instance, struct camera_interface cam_interface,struct format* pvideofmt)
+
+int D_init_camera(CAMERA_INSTANCE *camera_instance, struct camera_interface cam_interface)
 {
 	MMAL_STATUS_T status = MMAL_SUCCESS;
 	DCAMERA * pcamera = NULL;
@@ -516,31 +511,22 @@ int D_init_camera_ex(CAMERA_INSTANCE *camera_instance, struct camera_interface c
 		pcamera = &g_camera[0];
 	else
 		pcamera = &g_camera[cam_interface.camera_num];
-	
+	//参数初始化
 	default_status(pcamera);
-	pcamera->height = pvideofmt->height;
-	pcamera->width = pvideofmt->width;
-	pcamera->framerate = pvideofmt->framerate;
-	
 	pcamera->m_caminterface = cam_interface;
 	
 	bcm_host_init();
-      //Register our application with the logging system
-	  vcos_log_register("Dcamera", VCOS_LOG_CATEGORY);
-      veye_camera_isp_set_defaults(&pcamera->veye_camera_isp_state);
-	  pcamera->veye_camera_isp_state.width = pcamera->width;
-	  pcamera->veye_camera_isp_state.height = pcamera->height;
-	  pcamera->veye_camera_isp_state.height_align = 16;
-      pcamera->veye_camera_isp_state.framerate = pcamera->framerate;
-	if ((status = create_veye_camera_isp_component(&pcamera->veye_camera_isp_state,cam_interface.camera_num)) != MMAL_SUCCESS)
-	{
-	  vcos_log_error("%s: Failed to create camera component", __func__);
-	  return -1;
-	}
-       pcamera->camera_output_port = pcamera->veye_camera_isp_state.camera_component->output[0];
+   // Register our application with the logging system
+   vcos_log_register("Dcamera", VCOS_LOG_CATEGORY);
+   if ((status = create_veye_camera_isp_component(&pcamera->veye_camera_isp_state,cam_interface.camera_num)) != MMAL_SUCCESS)
+   {
+      vcos_log_error("%s: Failed to create camera component", __func__);
+      return -1;
+   }
+    pcamera->camera_output_port = pcamera->veye_camera_isp_state.camera_component->output[0];
 	  // Note we are lucky that the preview and null sink components use the same input port
 	  // so we can simple do this without conditionals
-	status = connect_ports(pcamera->camera_output_port, pcamera->veye_camera_isp_state.isp_component->input[0], &pcamera->isp_connection);
+	 status = connect_ports(pcamera->camera_output_port, pcamera->veye_camera_isp_state.isp_component->input[0], &pcamera->isp_connection);
 	if (status != MMAL_SUCCESS)
 	{
 		vcos_log_error("Failed to create rawcam->isp connection");
@@ -559,17 +545,6 @@ int D_init_camera_ex(CAMERA_INSTANCE *camera_instance, struct camera_interface c
 	D_close_camera(pcamera);
 	return -1;
 }
-
-int D_init_camera(CAMERA_INSTANCE *camera_instance, struct camera_interface cam_interface)
-{
-	struct format defaultfmt;
-	defaultfmt.width = 1920;
-	defaultfmt.height = 1080;
-	defaultfmt.framerate = 30;
-	return D_init_camera_ex(camera_instance,cam_interface,&defaultfmt);
-	
-}
-
 /**
  *  buffer header callback function for encoder
  *
@@ -1330,7 +1305,7 @@ int D_get_support_formats(CAMERA_INSTANCE camera_instance, struct format *fmt, i
 	{
 		fmt->width = 1920;
 		fmt->height = 1080;
-		fmt->framerate = 30; //此分辨率下最大帧率
+		fmt->maxframrate = 30; //此分辨率下最大帧率
 		return 0;
 	}
 	return -1;
