@@ -1,10 +1,5 @@
 FROM openhd/2018-10-09-raspbian-stretch-lite:v1  
 
-COPY .git /data/.git/
-COPY i2c_cmd /data/i2c_cmd/
-COPY veye_raspcam /data/veye_raspcam/
-COPY package.sh /data/
-
 RUN apt update
 
 RUN apt -y install git
@@ -18,6 +13,11 @@ RUN apt -y purge python-configparser
 RUN gem install fpm
 
 RUN pip install cloudsmith-cli
+
+COPY .git /data/.git/
+COPY i2c_cmd /data/i2c_cmd/
+COPY veye_raspcam /data/veye_raspcam/
+COPY package.sh /data/
 
 WORKDIR /data
 
