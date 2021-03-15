@@ -22,5 +22,9 @@ steps:
       repo: openhd/qopenhd
       dry_run: true
       dockerfile: Dockerfile-armhf-raspbian-buster
+      username:
+        from_secret: docker_openhd_username
+      password:
+        from_secret: docker_openhd_password
       build_args_from_env:
         - CLOUDSMITH_API_KEY
