@@ -5,7 +5,8 @@ OS=$2
 DISTRO=$3
 BUILD_TYPE=$4
 
-
+# There are no distro specific options in this because this package only works on a raspberry pi, the jetson
+# veye library is entirely separate
 
 if [ "${BUILD_TYPE}" == "docker" ]; then
     cat << EOF > /etc/resolv.conf
