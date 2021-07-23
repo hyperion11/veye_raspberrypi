@@ -1,14 +1,12 @@
 #!/bin/bash
 
-PLATFORM=$1
-DISTRO=$2
-BUILD_TYPE=$3
+PACKAGE_ARCH=$1
+OS=$2
+DISTRO=$3
+BUILD_TYPE=$4
 
-if [[ "${PLATFORM}" == "pi" ]]; then
-    OS="raspbian"
-    ARCH="arm"
-    PACKAGE_ARCH="armhf"
-fi
+# There are no distro specific options in this because this package only works on a raspberry pi, the jetson
+# veye library is entirely separate
 
 if [ "${BUILD_TYPE}" == "docker" ]; then
     cat << EOF > /etc/resolv.conf

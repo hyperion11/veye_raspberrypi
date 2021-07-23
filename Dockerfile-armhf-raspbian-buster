@@ -1,0 +1,16 @@
+FROM openhd/2020-05-27-raspios-buster-lite-armhf:v2
+
+RUN apt update
+
+COPY .git /data/.git/
+COPY i2c_cmd /data/i2c_cmd/
+COPY veye_raspcam /data/veye_raspcam/
+COPY package.sh /data/
+
+WORKDIR /data
+
+ARG CLOUDSMITH_API_KEY=000000000000
+
+RUN export CLOUDSMITH_API_KEY=$CLOUDSMITH_API_KEY
+
+RUN /data/package.sh armhf raspbian buster docker
