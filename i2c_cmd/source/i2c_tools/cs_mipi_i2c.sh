@@ -58,12 +58,12 @@
 
 COMMENT_SAMPLE
 
-I2C_DEV=10;
+I2C_DEV=0;
 I2C_ADDR=0x3b;
 
 print_usage()
 {
-    echo "this shell scripts should be used for CS-MIPI-X!"
+    echo "this shell scripts should be used for CS-MIPI-IMX307!"
 	echo "Usage:  ./cs_mipi_i2c.sh [-r/w] [-f] function name -p1 param1 -p2 param2 -p3 param3 -p4 param4 -b bus"
 	echo "options:"
 	echo "    -r                       read "
@@ -76,7 +76,7 @@ print_usage()
 	echo "    -b [i2c bus num] 		   i2c bus number"
     echo "    -d [i2c addr] 		   i2c addr if not default 0x3b"
     echo "support functions: devid,hdver,camcap,firmwarever,productmodel,videofmtcap,videofmt,ispcap,i2caddr,streammode,powerhz,
-     daynightmode ,hue ,contrast , satu , expostate , wbstate ,expfrmmode,expmode , aetarget, aetime,aeagc,metime ,meagain , medgain,dmetime ,dmeagain , dmedgain  , awbmode , mwbcolortemp , mwbgain,imagedir,sreg,striggerone,triggeredge,autotgcnt,tgdebncr,tgdly,pickmode,pickone,mipistatus,ledstrobe,slowshuttergain,sysreboot,sysreset,paramsave,yuvseq,i2cwen"
+     daynightmode ,hue ,contrast , satu , expostate , wbstate ,expfrmmode,expmode , aetarget, aetime,aeagc,metime ,meagain , medgain , awbmode , mwbcolortemp , mwbgain,imagedir,sreg,striggerone,triggeredge,autotgcnt,tgdebncr,tgdly,pickmode,pickone,mipistatus,ledstrobe,slowshuttergain,sysreboot,sysreset,paramsave"
 }
 
 ######################reglist###################################
@@ -111,8 +111,7 @@ TrigDlyH=0x20;
 TrigDlyE=0x21;
 PickModeEnable=0x26;
 PickOne=0x27;
-YUVSeq=0x28;
-
+DiscardedQnt=0x28;
 
 AutoTrigCntMaxL=0xC7;
 AutoTrigCntMaxM=0XC8;
@@ -149,7 +148,7 @@ SYSTEM_REBOOT=0x0187;
 NEW_FMT_FRAMRAT_MODE=0x0188;
 NEW_FMT_FRAMRAT_L=0x0189;
 NEW_FMT_FRAMRAT_H=0x018A;
-I2CWEn=0x190;
+
 ISP_CAP_L=0x0200;
 ISP_CAP_M=0x0201;
 ISP_CAP_H=0x0202;
@@ -183,6 +182,7 @@ AE_MAXTIME_E=0x021E;
 AE_MAXGAIN_DEC=0x021F;
 AE_MAXGAIN_INTER=0x0220;
 
+
 ME_TIME_L=0x0226;
 ME_TIME_M=0x0227;
 ME_TIME_H=0x0228;
@@ -206,15 +206,6 @@ MWB_COLORTEMPH=0x023B;
 MWB_RGAIN=0x023C;
 MWB_GGAIN=0x023D;
 MWB_BGAIN=0x023E;
-
-DME_TIME_L=0x0240;
-DME_TIME_M=0x0241;
-DME_TIME_H=0x0242;
-DME_TIME_E=0x0243;
-DME_AGAIN_DEC=0x0244;
-DME_AGAIN_INTER=0x0245;
-DME_DGAIN_DEC=0x0246;
-DME_DGAIN_INTER=0x0247;
 
 SNSOR_REG_FLG=0x700;
 SNSOR_REG_ADDR_L=0x701;
@@ -468,8 +459,8 @@ read_videofmt()
         res=$(./i2c_read $I2C_DEV $I2C_ADDR  $NEW_FMT_FRAMRAT_H);
         data_h=$?;
         newframerate=$((data_h*256+data_l));
-        fnewframerate=$(echo "scale=2;$newframerate/100"|bc);
-        printf "r new type videofmt width %d height %d framerate %.2f \n" $width $height $fnewframerate;
+        fnewframerate=$("scale=2;$newframerate / 100"|bc);
+        printf "r old type videofmt width %d height %d framerate %.2f \n" $width $height $fnewframerate;
     fi
 }
 
@@ -907,89 +898,6 @@ write_medgain()
 	printf "w manual dgain %d.%d dB\n" $dgain_int $dgain_dec;
 }
 
-read_dmetime()
-{
-    local exptime=0;
-    local data_l=0;
-    local data_m=0;
-    local data_h=0;
-    local data_e=0;
-    local res=0;
-    res=$(./i2c_read $I2C_DEV $I2C_ADDR  $DME_TIME_L);
-	data_l=$?;
-    res=$(./i2c_read $I2C_DEV $I2C_ADDR  $DME_TIME_M);
-	data_m=$?;
-    res=$(./i2c_read $I2C_DEV $I2C_ADDR  $DME_TIME_H);
-	data_h=$?;
-    res=$(./i2c_read $I2C_DEV $I2C_ADDR  $DME_TIME_E);
-	data_e=$?;
-    exptime=$((data_e*256*256*256+data_h*256*256+data_m*256+data_l));
-    printf "r direct mnual exptime %d us\n" $exptime;
-}
-
-write_dmetime()
-{
-    local exptime=0;
-    local data_l=0;
-    local data_m=0;
-    local data_h=0;
-    local data_e=0;
-    exptime=$PARAM1;
-    data_e=$((exptime>>24&0xFF));
-    data_h=$((exptime>>16&0xFF));
-    data_m=$((exptime>>8&0xFF));
-    data_l=$((exptime&0xFF));
-    res=$(./i2c_write $I2C_DEV $I2C_ADDR  $DME_TIME_L $data_l);
-    res=$(./i2c_write $I2C_DEV $I2C_ADDR  $DME_TIME_M $data_m);
-    res=$(./i2c_write $I2C_DEV $I2C_ADDR  $DME_TIME_H $data_h);
-    res=$(./i2c_write $I2C_DEV $I2C_ADDR  $DME_TIME_E $data_e);
-    printf "w direct mnual exptime %d us\n" $exptime;
-}
-
-read_dmeagain()
-{
-    local again_dec=0;
-    local again_int=0;
-    res=$(./i2c_read $I2C_DEV $I2C_ADDR  $DME_AGAIN_DEC);
-	again_dec=$?;
-    res=$(./i2c_read $I2C_DEV $I2C_ADDR  $DME_AGAIN_INTER);
-	again_int=$?;
-	printf "r direct manual again %d.%d dB\n" $again_int $again_dec;
-}
-
-write_dmeagain()
-{
-    local again_dec=0;
-    local again_int=0;
-    again_int=$PARAM1;
-    again_dec=$PARAM2;
-    res=$(./i2c_write $I2C_DEV $I2C_ADDR $DME_AGAIN_DEC $again_dec);
-    res=$(./i2c_write $I2C_DEV $I2C_ADDR $DME_AGAIN_INTER $again_int);
-	printf "w direct manual again %d.%d dB\n" $again_int $again_dec;
-}
-
-read_dmedgain()
-{
-    local dgain_dec=0;
-    local dgain_int=0;
-    res=$(./i2c_read $I2C_DEV $I2C_ADDR  $DME_DGAIN_DEC);
-	dgain_dec=$?;
-    res=$(./i2c_read $I2C_DEV $I2C_ADDR  $DME_DGAIN_INTER);
-	dgain_int=$?;
-	printf "r direct manual dgain %d.%d dB\n" $dgain_int $dgain_dec;
-}
-
-write_dmedgain()
-{
-    local dgain_dec=0;
-    local dgain_int=0;
-    dgain_int=$PARAM1;
-    dgain_dec=$PARAM2;
-    res=$(./i2c_write $I2C_DEV $I2C_ADDR $DME_DGAIN_DEC $dgain_dec);
-    res=$(./i2c_write $I2C_DEV $I2C_ADDR $DME_DGAIN_INTER $dgain_int);
-	printf "w direct manual dgain %d.%d dB\n" $dgain_int $dgain_dec;
-}
-
 read_awbmode()
 {
     local awbmode=0;
@@ -1394,61 +1302,6 @@ write_ledstrobe()
     fi
 }
 
-read_i2c_write_enable()
-{
-    local i2cwenable=0;
-	local res=0;
-	res=$(./i2c_read $I2C_DEV $I2C_ADDR $I2CWEn);
-	i2cwenable=$?;
-    if [ $i2cwenable -eq 238 ] ; then
-        printf "r i2c write enable\n";
-    else
-		printf "r i2c write disable\n";
-	fi
-	
-}
-write_i2c_write_enable()
-{
-    local i2c_write_enable=0;
-	local res=0;
-    if [ $PARAM1 -eq 0 ] ; then
-        i2c_write_enable=0x11;
-    else
-		i2c_write_enable=0xEE;
-	fi
-
-	res=$(./i2c_write $I2C_DEV $I2C_ADDR $I2CWEn $i2c_write_enable);
-    sleep 0.01;
-    res=$(./i2c_write $I2C_DEV $I2C_ADDR $I2CWEn $i2c_write_enable);
-	printf "w i2c_write_enable is 0x%2x\n" $PARAM1;
-}
-
-read_yuvseq()
-{
-	local yuvseq=0;
-	local res=0;
-	res=$(./i2c_read $I2C_DEV $I2C_ADDR $YUVSeq );
-	yuvseq=$?;
-    if [ $yuvseq -eq 1 ] ; then
-		printf "r YUVseq is YUYV\n";
-    else
-        printf "r YUVseq is UYVY\n";
-	fi
-}
-
-write_yuvseq()
-{
-	local csienable=0;
-	local res=0;
-	res=$(./i2c_write $I2C_DEV $I2C_ADDR $YUVSeq $PARAM1);
-    if [ $PARAM1 = "YUYV" ] ; then
-		res=$(./i2c_write $I2C_DEV $I2C_ADDR  $YUVSeq 0x1);
-    else
-        res=$(./i2c_write $I2C_DEV $I2C_ADDR  $YUVSeq 0x0);
-	fi
-	printf "w YUVseq is %s\n" $PARAM1;
-}
-
 #######################Action# BEGIN##############################
 
 pinmux;
@@ -1524,15 +1377,6 @@ if [ ${MODE} = "read" ] ; then
         "medgain")
             read_medgain;
 			;;
-        "dmetime")
-            read_dmetime;
-			;;
-        "dmeagain")
-            read_dmeagain;
-			;;
-        "dmedgain")
-            read_dmedgain;
-			;;
         "awbmode")
             read_awbmode;
 			;;
@@ -1575,12 +1419,6 @@ if [ ${MODE} = "read" ] ; then
         "mipistatus")
             read_mipistatus;
 	    		;;
-        "i2cwen")
-			read_i2c_write_enable;
-			;;
-        "yuvseq")
-            read_yuvseq;
-                ;;
         *)
 			echo "NOT SUPPORTED!";
 			;;
@@ -1637,15 +1475,6 @@ if [ ${MODE} = "write" ] ; then
         "medgain")
             write_medgain;
 			;;
-        "dmetime")
-            write_dmetime;
-			;;
-        "dmeagain")
-            write_dmeagain;
-			;;
-        "dmedgain")
-            write_dmedgain;
-			;;
         "awbmode")
             write_awbmode;
 			;;
@@ -1694,12 +1523,6 @@ if [ ${MODE} = "write" ] ; then
         "ledstrobe")
             write_ledstrobe;
 			;;
-        "i2cwen")
-			write_i2c_write_enable;
-			;;
-        "yuvseq")
-            write_yuvseq;
-                ;;
         *)
 			echo "NOT SUPPORTED!";
 			;;
