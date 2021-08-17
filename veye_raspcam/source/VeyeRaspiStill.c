@@ -383,6 +383,7 @@ static int parse_cmdline(int argc, const char **argv, RASPISTILL_STATE *state)
             valid = 0;
          else
             i++;
+	state->veye_camera_isp_state.width = state->width;
          break;
 
       case CommandHeight: // Height > 0
@@ -390,6 +391,7 @@ static int parse_cmdline(int argc, const char **argv, RASPISTILL_STATE *state)
             valid = 0;
          else
             i++;
+	  state->veye_camera_isp_state.height = state->height;
          break;
  	case CommandQuality: // Quality = 1-100
          if (sscanf(argv[i + 1], "%u", &state->quality) == 1)
@@ -845,14 +847,14 @@ static void camera_buffer_callback(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buff
       if (buffer->length && bytes_written != bytes_to_write)
       {
          vcos_log_error("Unable to write buffer to file - aborting %d vs %d", bytes_written, bytes_to_write);
-         //complete = 1;
+         complete = 1;
       }
 
       // Check end of frame or error
-     // if (buffer->flags & (MMAL_BUFFER_HEADER_FLAG_FRAME_END | MMAL_BUFFER_HEADER_FLAG_TRANSMISSION_FAILED))
-     //    complete = 1;
-      if(buffer->length && bytes_written == bytes_to_write)
-	  complete = 1;
+      if (buffer->flags & (MMAL_BUFFER_HEADER_FLAG_FRAME_END | MMAL_BUFFER_HEADER_FLAG_TRANSMISSION_FAILED))
+         complete = 1;
+   //  if(buffer->length && bytes_written == bytes_to_write)
+	//  complete = 1;
    }
   /* else
    {
@@ -1392,8 +1394,6 @@ int main(int argc, const char **argv)
       exit(EX_USAGE);
    }
 
-   default_status(&state);
-
    // Parse the command line and put options in to our status structure
    if (parse_cmdline(argc, argv, &state))
    {
@@ -1406,13 +1406,14 @@ int main(int argc, const char **argv)
       fprintf(stderr, "\n%s Camera App %s\n\n", basename((char*)argv[0]), VERSION_STRING);
       dump_status(&state);
    }
-
+    raspicamcontrol_poweon(state.cameraNum);
    // OK, we have a nice set of parameters. Now set up our components
    // We have three components. Camera, Preview and encoder.
    // Camera and encoder are different in stills/video, but preview
    // is the same so handed off to a separate module
    fprintf(stderr, "before create camera com sensor mode %d\n",state.veye_camera_isp_state.sensor_mode);
-   
+   state.veye_camera_isp_state.rpi_crop.crop_enable = 0;
+   state.veye_camera_isp_state.rpi_scale.scale_enable = 0;
   if ((status = create_veye_camera_isp_component(&state.veye_camera_isp_state,state.cameraNum)) != MMAL_SUCCESS)
    {
       vcos_log_error("%s: Failed to create camera component", __func__);
