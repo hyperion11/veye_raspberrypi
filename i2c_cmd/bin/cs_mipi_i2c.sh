@@ -58,7 +58,7 @@
 
 COMMENT_SAMPLE
 
-I2C_DEV=10;
+I2C_DEV=0;
 I2C_ADDR=0x3b;
 
 print_usage()
