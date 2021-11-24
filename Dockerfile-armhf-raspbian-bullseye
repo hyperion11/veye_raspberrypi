@@ -1,6 +1,6 @@
 FROM openhd/2020-05-27-raspios-buster-lite-armhf:v2
 
-RUN apt update
+RUN apt-get update --allow-releaseinfo-change
 
 COPY .git /data/.git/
 COPY i2c_cmd /data/i2c_cmd/
