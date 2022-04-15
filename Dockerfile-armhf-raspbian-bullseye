@@ -2,7 +2,7 @@ FROM ghcr.io/openhd/bullseye-lite:v2.3
 
 RUN apt-get update --allow-releaseinfo-change
 
-RUN apt install -y gcc
+RUN apt install -y gcc libc6-dev
 
 COPY .git /data/.git/
 COPY i2c_cmd /data/i2c_cmd/
