@@ -23,16 +23,7 @@ TMPDIR=/tmp/${PACKAGE_NAME}-installdir
 
 rm -rf ${TMPDIR}/*
 
-mkdir -p ${TMPDIR}/usr/local/bin || exit 1
 mkdir -p ${TMPDIR}/usr/local/share/veye-raspberrypi || exit 1
-
-pushd veye_raspcam/source
-chmod +x buildme || exit 1
-./buildme || exit 1
-cp veye_* ${TMPDIR}/usr/local/bin/ || exit 1
-popd
-
-chmod +x ${TMPDIR}/usr/local/bin/* || exit 1
 
 cp -a i2c_cmd/bin/* ${TMPDIR}/usr/local/share/veye-raspberrypi/ || exit 1
 chmod +x ${TMPDIR}/usr/local/share/veye-raspberrypi/* || exit 1
