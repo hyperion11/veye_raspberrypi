@@ -6,7 +6,6 @@ RUN apt install -y gcc libc6-dev libraspberrypi-dev raspberrypi-kernel-headers
 
 COPY .git /data/.git/
 COPY i2c_cmd /data/i2c_cmd/
-COPY veye_raspcam /data/veye_raspcam/
 COPY package.sh /data/
 
 WORKDIR /data
