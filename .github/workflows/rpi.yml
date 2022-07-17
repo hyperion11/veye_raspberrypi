@@ -46,8 +46,8 @@ jobs:
             sudo bash install_dep.sh
             ls -a
             mkdir /data/
-            cp .git /data/.git/
-            cp i2c_cmd /data/i2c_cmd/
+            cp -r .git /data/.git/
+            cp -r i2c_cmd /data/i2c_cmd/
             package.sh /data/
             cd data
             sudo ./package.sh armhf raspbian bullseye
