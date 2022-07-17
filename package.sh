@@ -18,7 +18,6 @@ mkdir -p ${TMPDIR}/usr/local/share/veye-raspberrypi || exit 1
 cp -a i2c_cmd/bin/* ${TMPDIR}/usr/local/share/veye-raspberrypi/ || exit 1
 chmod +x ${TMPDIR}/usr/local/share/veye-raspberrypi/* || exit 1
 
-VER2=$(git rev-parse --short HEAD)
 echo ${VER2}
 VERSION="2.2.0-evo-$(date '+%m%d%H%M')-${VER2}"
 

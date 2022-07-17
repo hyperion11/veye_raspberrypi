@@ -20,6 +20,7 @@ jobs:
     - name: Running Scripts
       run: |
         VER2=$(git rev-parse --short HEAD)
+        echo ${VER2}
         sudo bash install_dep.sh
         sudo mkdir /data/.git/
         sudo cp -r .git /data/.git/
