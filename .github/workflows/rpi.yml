@@ -19,6 +19,7 @@ jobs:
         
     - name: Running Scripts
       run: |
+        sudo bash install_dep.sh
         sudo mkdir /data/.git/
         sudo cp -r .git /data/.git/
         sudo cp -r i2c_cmd /data/i2c_cmd/
