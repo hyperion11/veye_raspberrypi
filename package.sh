@@ -18,13 +18,14 @@ mkdir -p ${TMPDIR}/usr/local/share/veye-raspberrypi || exit 1
 cp -a i2c_cmd/bin/* ${TMPDIR}/usr/local/share/veye-raspberrypi/ || exit 1
 chmod +x ${TMPDIR}/usr/local/share/veye-raspberrypi/* || exit 1
 
+cd /home/runner/work/veye_raspberrypi/veye_raspberrypi
 VER2=$(git rev-parse --short HEAD)
 echo ${VER2}
 VERSION="2.2.0-evo-$(date '+%m%d%H%M')-${VER2}"
-
+cd /data/
 rm ${PACKAGE_NAME}_${VERSION}_${PACKAGE_ARCH}.deb > /dev/null 2>&1
 
-fpm -a ${PACKAGE_ARCH} -s dir -t deb -n ${PACKAGE_NAME} -v ${VERSION} -C ${TMPDIR} \
+sudo fpm -a ${PACKAGE_ARCH} -s dir -t deb -n ${PACKAGE_NAME} -v ${VERSION} -C ${TMPDIR} \
   -p ${PACKAGE_NAME}_VERSION_ARCH.deb || exit 1
 
 #
