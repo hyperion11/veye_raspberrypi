@@ -19,11 +19,11 @@ jobs:
         
     - name: Running Scripts
       run: |
-        mkdir /data/.git/
-        cp -r .git /data/.git/
-        cp -r i2c_cmd /data/i2c_cmd/
-        cp -r veye_raspcam /data/veye_raspcam/
-        cp -r package.sh /data/
+        sudo mkdir /data/.git/
+        sudo cp -r .git /data/.git/
+        sudo cp -r i2c_cmd /data/i2c_cmd/
+        sudo cp -r veye_raspcam /data/veye_raspcam/
+        sudo cp -r package.sh /data/
         cd /data/
         echo "starting build"
         sudo ./package.sh armhf raspbian bullseye
