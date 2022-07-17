@@ -48,7 +48,8 @@ jobs:
             mkdir /data/
             cp -r .git /data/.git/
             cp -r i2c_cmd /data/i2c_cmd/
-            package.sh /data/
+            cp -r veye_raspcam /data/veye_raspcam/
+            cp -r package.sh /data/
             cd data
             sudo ./package.sh armhf raspbian bullseye
             ls -a
