@@ -3,19 +3,9 @@
 PACKAGE_ARCH=$1
 OS=$2
 DISTRO=$3
-BUILD_TYPE=$4
 
 # There are no distro specific options in this because this package only works on a raspberry pi, the jetson
 # veye library is entirely separate
-
-if [ "${BUILD_TYPE}" == "docker" ]; then
-    cat << EOF > /etc/resolv.conf
-options rotate
-options timeout:1
-nameserver 8.8.8.8
-nameserver 8.8.4.4
-EOF
-fi
 
 PACKAGE_NAME=veye-raspberrypi
 
@@ -35,7 +25,7 @@ VERSION="2.2.0-evo-$(date '+%m%d%H%M')-${VER2}"
 rm ${PACKAGE_NAME}_${VERSION}_${PACKAGE_ARCH}.deb > /dev/null 2>&1
 
 fpm -a ${PACKAGE_ARCH} -s dir -t deb -n ${PACKAGE_NAME} -v ${VERSION} -C ${TMPDIR} \
-  -p ${PACKAGE_NAME}_VERSION_ARCH.deb
+  -p ${PACKAGE_NAME}_VERSION_ARCH.deb || exit 1
 
 #
 # Only push to cloudsmith for tags. If you don't want something to be pushed to the repo, 
