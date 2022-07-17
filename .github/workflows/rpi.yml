@@ -27,22 +27,22 @@ jobs:
         submodules: recursive
         
     - name: Running Scripts
-        run: |
-          ls -a
-          cd /opt/veye_raspberrypi
-          rm /etc/apt/sources.list
-          touch /etc/apt/sources.list
-          echo "deb http://mirror.netcologne.de/raspbian/raspbian/ bullseye main contrib non-free" > /etc/apt/sources.list
-          apt update
-          ls -a
-          mkdir /data/
-          cp -r .git /data/.git/
-          cp -r i2c_cmd /data/i2c_cmd/
-          cp -r veye_raspcam /data/veye_raspcam/
-          cp -r package.sh /data/
-          cd /data/
-          sudo ./package.sh armhf raspbian bullseye
-          ls -a
+      run: |
+        ls -a
+        cd /opt/veye_raspberrypi
+        rm /etc/apt/sources.list
+        touch /etc/apt/sources.list
+        echo "deb http://mirror.netcologne.de/raspbian/raspbian/ bullseye main contrib non-free" > /etc/apt/sources.list
+        apt update
+        ls -a
+        mkdir /data/
+        cp -r .git /data/.git/
+        cp -r i2c_cmd /data/i2c_cmd/
+        cp -r veye_raspcam /data/veye_raspcam/
+        cp -r package.sh /data/
+        cd /data/
+        sudo ./package.sh armhf raspbian bullseye
+        ls -a
 
     - name: Upload to Github
       uses: 'actions/upload-artifact@v2'
