@@ -19,7 +19,7 @@ jobs:
         
     - name: Running Scripts
       run: |
-        sudo -s
+        mkdir /data
         cp -r .git /data/.git/
         cp -r i2c_cmd /data/i2c_cmd/
         cp -r veye_raspcam /data/veye_raspcam/
