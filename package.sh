@@ -28,7 +28,9 @@ mkdir -p ${TMPDIR}/usr/local/share/veye-raspberrypi || exit 1
 cp -a i2c_cmd/bin/* ${TMPDIR}/usr/local/share/veye-raspberrypi/ || exit 1
 chmod +x ${TMPDIR}/usr/local/share/veye-raspberrypi/* || exit 1
 
-VERSION=$(git describe)
+VER2=$(git rev-parse --short HEAD) ||exit
+echo ${VER2}
+VERSION="2.2.0-evo-$(date '+%m%d%H%M')-${VER2}"
 
 rm ${PACKAGE_NAME}_${VERSION//v}_${PACKAGE_ARCH}.deb > /dev/null 2>&1
 
@@ -44,6 +46,6 @@ if [[ $? -eq 0 ]]; then
     echo "Pushing package to OpenHD repository"
     cloudsmith push deb openhd/openhd-2-1/${OS}/${DISTRO} ${PACKAGE_NAME}_${VERSION//v}_${PACKAGE_ARCH}.deb
 else
-    echo "Pushing package to OpenHD milestone repository"
-    cloudsmith push deb openhd/openhd-2-1-alpha/${OS}/${DISTRO} ${PACKAGE_NAME}_${VERSION//v}_${PACKAGE_ARCH}.deb
+    echo "Pushing package to OpenHD evo repository"
+    cloudsmith push deb openhd/openhd-2-2-evo/${OS}/${DISTRO} ${PACKAGE_NAME}_${VERSION}_${PACKAGE_ARCH}.deb
 fi
