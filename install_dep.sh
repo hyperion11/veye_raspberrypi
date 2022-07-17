@@ -14,8 +14,6 @@ apt -y install build-essential autotools-dev automake libtool autoconf \
             curl \
             git \
             libc6-dev \
-            libraspberrypi-dev \
-            raspberrypi-kernel-headers \
             ruby-dev \
             python3-pip \
             libnl-3-dev cmake snapd libboost-all-dev libnl-genl-3-dev \
