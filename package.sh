@@ -32,7 +32,7 @@ VER2=$(git rev-parse --short HEAD) ||exit
 echo ${VER2}
 VERSION="2.2.0-evo-$(date '+%m%d%H%M')-${VER2}"
 
-rm ${PACKAGE_NAME}_${VERSION//v}_${PACKAGE_ARCH}.deb > /dev/null 2>&1
+rm ${PACKAGE_NAME}_${VERSION}_${PACKAGE_ARCH}.deb > /dev/null 2>&1
 
 fpm -a ${PACKAGE_ARCH} -s dir -t deb -n ${PACKAGE_NAME} -v ${VERSION//v} -C ${TMPDIR} \
   -p ${PACKAGE_NAME}_VERSION_ARCH.deb || exit 1
