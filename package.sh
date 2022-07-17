@@ -28,14 +28,14 @@ mkdir -p ${TMPDIR}/usr/local/share/veye-raspberrypi || exit 1
 cp -a i2c_cmd/bin/* ${TMPDIR}/usr/local/share/veye-raspberrypi/ || exit 1
 chmod +x ${TMPDIR}/usr/local/share/veye-raspberrypi/* || exit 1
 
-VER2=$(git rev-parse --short HEAD) ||exit
+VER2=$(git rev-parse --short HEAD)
 echo ${VER2}
 VERSION="2.2.0-evo-$(date '+%m%d%H%M')-${VER2}"
 
 rm ${PACKAGE_NAME}_${VERSION}_${PACKAGE_ARCH}.deb > /dev/null 2>&1
 
 fpm -a ${PACKAGE_ARCH} -s dir -t deb -n ${PACKAGE_NAME} -v ${VERSION//v} -C ${TMPDIR} \
-  -p ${PACKAGE_NAME}_VERSION_ARCH.deb || exit 1
+  -p ${PACKAGE_NAME}_VERSION_ARCH.deb
 
 #
 # Only push to cloudsmith for tags. If you don't want something to be pushed to the repo, 
