@@ -42,10 +42,3 @@ fpm -a ${PACKAGE_ARCH} -s dir -t deb -n ${PACKAGE_NAME} -v ${VERSION//v} -C ${TM
 # don't create a tag. You can build packages and test them locally without tagging.
 #
 git describe --exact-match HEAD > /dev/null 2>&1
-if [[ $? -eq 0 ]]; then
-    echo "Pushing package to OpenHD repository"
-    cloudsmith push deb openhd/openhd-2-1/${OS}/${DISTRO} ${PACKAGE_NAME}_${VERSION}_${PACKAGE_ARCH}.deb
-else
-    echo "Pushing package to OpenHD evo repository"
-    cloudsmith push deb openhd/openhd-2-2-evo/${OS}/${DISTRO} ${PACKAGE_NAME}_${VERSION}_${PACKAGE_ARCH}.deb
-fi
