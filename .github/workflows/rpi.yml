@@ -41,6 +41,7 @@ jobs:
         cp -r veye_raspcam /data/veye_raspcam/
         cp -r package.sh /data/
         cd /data/
+        echo "starting build"
         sudo ./package.sh armhf raspbian bullseye
         ls -a
 
